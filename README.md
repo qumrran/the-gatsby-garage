@@ -1,3 +1,1 @@
-<h1 align="center">
-  Gatsby WordPress Gutenberg Starter
-</h1>
+This is the repository for the Gatsby course using headless CMS and GraphQL.
