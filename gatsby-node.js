@@ -1,46 +1,61 @@
 const path = require("path");
-const {assignIds, assignGatsbyImage} = require("@webdeveducation/wp-block-tools");
+const {
+  assignIds,
+  assignGatsbyImage,
+} = require("@webdeveducation/wp-block-tools");
 const fs = require("fs");
 
-exports.createPages = async ({actions, graphql}) => {
-    const pageTemplate = path.resolve("src/templates/page.js");
-    const {createPage} = actions;
-    const {data} = await graphql(`
-        query AllPagesQuery {
-          wp {
-            themeStylesheet
-          }
-            allWpPage {
-              nodes {
-                blocks
-                databaseId
-                uri
-              }
-            }
-          }
-    `);
+exports.createPages = async ({ actions, graphql }) => {
+  const pageTemplate = path.resolve("src/templates/page.js");
+  const { createPage } = actions;
 
-    try{
-     fs.writeFileSync("./public/themeStylesheet.css", data.wp.themeStylesheet);
-    }catch(e){
-ga
+  const { data } = await graphql(`
+    query AllPagesQuery {
+      wp {
+        themeStylesheet
+      }
+      allWpCar {
+        nodes {
+          databaseId
+          blocks
+          uri
+        }
+      }
+      allWpPage {
+        nodes {
+          databaseId
+          blocks
+          uri
+        }
+      }
     }
+  `);
 
-    for(let i=0; i< data.allWpPage.nodes.length; i++) {
-        const page = data.allWpPage.nodes[i];
-        let blocks = page.blocks;
-        blocks = assignIds(blocks);
-        blocks = await assignGatsbyImage({
-          blocks,
-          graphql,
-          coreMediaText: true
-    })
-        createPage({
-            path: page.uri,
-            component: pageTemplate,
-            context: {
-              blocks,
-            },
-        });
-    }
+  try {
+    fs.writeFileSync("./public/themeStylesheet.css", data.wp.themeStylesheet);
+  } catch (e) {}
+
+  const allPages = [...data.allWpPage.nodes, ...data.allWpCar.nodes];
+
+  for (let i = 0; i < allPages.length; i++) {
+    const page = allPages[i];
+    let blocks = page.blocks || [];
+    blocks = assignIds(blocks || []);
+    blocks = await assignGatsbyImage({
+      blocks,
+      graphql,
+      coreMediaText: true,
+      coreImage: true,
+      coreCover: true,
+    });
+
+    createPage({
+      path: page.uri,
+      component: pageTemplate,
+      context: {
+        databaseId: page.databaseId,
+        blocks,
+      },
+    });
+  }
 };
